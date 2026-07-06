@@ -5,7 +5,7 @@ import plotly.express as px
 
 from calc import simulate_distribution, ParseError
 MAX_COMBINATIONS=200
-
+MATRIX_CMAP='plasma'
 def parse_variable_values(value_str):
     """Parse variable values from string format.
     Supports: list (1,2,3), range (1-5), range with step (1-6:2)
@@ -190,7 +190,7 @@ def main():
     </style>
     """
     )
-    matrix_cmap = 'plasma'
+
     st.title("Dice Roll Expected Value Calculator", text_alignment='center')
     st.divider()
 
@@ -343,7 +343,7 @@ def main():
                     "Metric": ["Mean", "Median", "Standard deviation (bias corrected)"],
                     "Value": [f"{mean:.3f}", f"{median}", f"{stddev:.3f}"]
                 })
-                # styled_summary = summary_data.style.background_gradient(cmap=matrix_cmap, subset=['Value'])
+                # styled_summary = summary_data.style.background_gradient(cmap=MATRIX_CMAP, subset=['Value'])
                 st.dataframe(summary_data,use_container_width=True, hide_index=True)
             with graph_col:
                 df = pd.DataFrame({"result": values})
@@ -354,7 +354,7 @@ def main():
             
             with summary_col:
                 st.subheader("Result Summary", text_alignment='center')
-                styled_df = results['df'].style.background_gradient(cmap=matrix_cmap, subset=['Mean', 'Median', 'Std Dev'])
+                styled_df = results['df'].style.background_gradient(cmap=MATRIX_CMAP, subset=['Mean', 'Median', 'Std Dev'])
                 st.dataframe(styled_df, use_container_width=True, hide_index=True)
             
             with graph_col:
@@ -372,10 +372,10 @@ def main():
             with summary_col:
                 st.subheader("Result Summary", text_alignment='center')
                 st.text("Mean", text_alignment='center')
-                styled_mean = results['df_mean'].style.background_gradient(cmap=matrix_cmap).format("{:.2f}")
+                styled_mean = results['df_mean'].style.background_gradient(cmap=MATRIX_CMAP).format("{:.2f}")
                 st.dataframe(styled_mean, use_container_width=True)
                 st.text("Median", text_alignment='center')
-                styled_median = results['df_median'].style.background_gradient(cmap=matrix_cmap)
+                styled_median = results['df_median'].style.background_gradient(cmap=MATRIX_CMAP)
                 st.dataframe(styled_median, use_container_width=True)
             
             with graph_col:
