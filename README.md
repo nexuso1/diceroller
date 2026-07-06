@@ -5,6 +5,12 @@ Website link: []()
     - run `python calc.py -h` for info
 
 # Usage Guide
+The output of the program is the expected value computed from the dice expression, along with median and standard deviation.
+You can either use the website or run locally:
+```sh
+python calc.py "(2d6 + 5)"
+```
+
 ## Binary Operators (combine two values)
 - `d` - Dice roll: `NdS` rolls N dice with S sides
 - `+` - Addition
@@ -40,6 +46,3 @@ python -m pip install -r requirements.txt
 ```
 
 - Running from command line
-```sh
-python calc.py "2d6 + 5"
-```

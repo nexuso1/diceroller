@@ -97,33 +97,35 @@ def parse(expr):
 def evaluate_expression(expr, trials=200_000, seed=None):
     rng = np.random.default_rng(seed)
     evaluator = parse(expr)
-    values = evaluator(rng, trials)
-    return float(np.mean(values))
-
+    return evaluator(rng, trials)
 
 def simulate_distribution(expr, trials=200_000, seed=None):
     rng = np.random.default_rng(seed)
     evaluator = parse(expr)
     return evaluator(rng, trials)
 
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Evaluate dice expression expected value by Monte Carlo simulation.")
     parser.add_argument("expression", nargs="+", help="Dice expression to evaluate")
     parser.add_argument("--trials", type=int, default=200_000, help="Number of simulations to run")
     parser.add_argument("--seed", type=int, default=None, help="RNG seed for reproducibility")
+    parser.add_argument("-v", "--verbosity", type=int, default=1, help="Verbosity. Set to 0 to only write the expected value.")
     args = parser.parse_args(argv)
     expression = " ".join(args.expression)
 
     try:
-        expected_value = evaluate_expression(expression, trials=args.trials, seed=args.seed)
+        values = evaluate_expression(expression, trials=args.trials, seed=args.seed)
     except ParseError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
-
-    print(f"Expression: {expression}")
-    print(f"Trials: {args.trials}")
-    print(f"Expected value: {expected_value:.6f}")
+    if args.verbosity > 0:
+        print(f"Expression: {expression}")
+        print(f"Trials: {args.trials}")
+        print(f"Expected value: {np.mean(values):.3f}")
+        print(f"Median value: {np.median(values):.3f}")
+        print(f"Standard deviation (bias corrected): {np.std(values, ddof=1):.3f}")
+    else:
+        print(np.mean(values))
     return 0
 
 
