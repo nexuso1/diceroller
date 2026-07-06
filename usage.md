@@ -24,4 +24,4 @@
 - `(d20 >= 15)` - Check if d20 roll is 15 or higher (1 for success, 0 for failure)
 - `(d20 max d20 + 5 >= 15) * (2d6 + 5)` - Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
 - `(d20 + 5 >= 15) * (2d6 + 5) + (d20 + 5 >= 15) * (1d4 + 5)` - Two attack rolls, both against the same AC and with the same attack bonuses, but with different damage values.
-- `((d20 max d20 + n - 5 >= k) * (2d6 + 5 + 10)) > ((d20 max d20 + n >= k) * (2d6 + 5 ))` Comparison between attacks with Heavy Weapon Master(HWM) and without. `n` is the base attack bonus, and `k` is the AC. The median matrix will have `1` on the positions where the HWM attack deals more damag on average. Use variables to set different values for `n` and `k`.
+- `((d20 max d20 + n - 5 >= k) * (2d6 + 5 + 10)) > ((d20 max d20 + n >= k) * (2d6 + 5 ))` Comparison between attacks with Heavy Weapon Master(HWM) and without. `n` is the base attack bonus, and `k` is the AC. The median matrix will have `1` on the positions where the HWM attack deals more damage on average. Use variables to set different values for `n` and `k`.
