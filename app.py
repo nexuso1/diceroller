@@ -46,7 +46,7 @@ def main():
     """
     )
 
-    st.title("Diceroll EV Computation", text_alignment='center')
+    st.title("Dice Roll Expected Value Calculator", text_alignment='center')
 
     st.divider()
 
