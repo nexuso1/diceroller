@@ -146,34 +146,9 @@ def plot_dist_df(df, **kwargs):
     st.plotly_chart(fig, use_container_width=True, **kwargs)
             
 def usage_guide():
-    st.markdown("""
-    # Usage Guide
-    ## Binary Operators (combine two values)
-    - `d` - Dice roll: `NdS` rolls N dice with S sides
-    - `+` - Addition
-    - `-` - Subtraction
-    - `*` - Multiplication
-    - `/` - Division
-    - `>` - Greater than (returns 1 if true, 0 if false)
-    - `<` - Less than (returns 1 if true, 0 if false)
-    - `>=` - Greater than or equal (returns 1 if true, 0 if false)
-    - `<=` - Less than or equal (returns 1 if true, 0 if false)
-    - `==` - Equal (returns 1 if true, 0 if false)
-    - `!=` - Not equal (returns 1 if true, 0 if false)
-    - `max` - Maximum: takes the maximum of two values (e.g for Advantage)
-    - `min` - Minimum: takes the minimum of two values (e.g. for Disadvantage)
-
-    ## Unary Operators (apply to one value)
-    - `-` - Negation (multiply by -1)
-
-    ## Examples
-    - `d20` - Roll a 20-sided die
-    - `2d6 + 5` - Roll two 6-sided dice and add 5
-    - `d20 max d20 + 5` - Roll d20 with advantage and add 5
-    - `(d20 >= 15)` - Check if d20 roll is 15 or higher (1 for success, 0 for failure)
-    - `(d20 max d20 + 5 >= 15) * (2d6 + 5)` - Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
-    - `(d20 + 5 >= 15) * (2d6 + 5) + (d20 + 5 >= 15) * (1d4 + 5)` - Two attack rolls, both against the same AC and with the same attack bonuses, but with different damage values.
-    """)
+    with open('usage.md', 'r') as f:
+        st.markdown(f.read())
+    
 
 def main():
     st.html("""
@@ -367,7 +342,7 @@ def main():
                     plot_dist_df(df_dist)
         
         elif results['type'] == 'two_var':
-            summary_col, graph_col = st.columns([0.35, 0.65], gap='medium')
+            summary_col, graph_col = st.columns([0.5, 0.5], gap='medium')
             
             with summary_col:
                 st.subheader("Result Summary", text_alignment='center')
