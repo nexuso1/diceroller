@@ -1,5 +1,14 @@
-# Simple dice roll EV calculator
-**Run it online** []()
+<div align="center">
+<h1>Simple dice roll EV calculator </h1>
+</div>
+
+![main_screen](img/image.png)
+
+<div align="center">
+
+<p style='font-size:18px;'>Run it online: <a href=https://dicecalc.streamlit.app>https://dicecalc.streamlit.app </a>
+</p>
+</div>
 
 Self-explanatory, mainly meant for DND-style attack roll and damage calculations
 - You can also run `calc.py` from the command line with the same syntax as in the browser app
