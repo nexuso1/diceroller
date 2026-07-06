@@ -39,9 +39,14 @@ def main():
     st.html("""
     <style>
         .stMainBlockContainer {
-            max-width:90rem;
+            max-width: 90rem;
         }
-
+        @media (max-width: 768px) {
+            .stMainBlockContainer {
+                max-width: 100%;
+                padding: 0 1rem;
+            }
+        }
     </style>
     """
     )
@@ -69,7 +74,7 @@ def main():
             values = simulate_distribution(expression, trials=int(trials), seed=int(seed))
 
 
-        summary_col, graph_col   = st.columns([0.3, 0.7], gap='medium')
+        summary_col, graph_col   = st.columns([0.35, 0.65], gap='medium')
 
         mean = float(np.mean(values))
         median = int(np.median(values))
