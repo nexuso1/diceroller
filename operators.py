@@ -184,7 +184,7 @@ class NotEqual(BinaryOperator):
 
 
 class Advantage(BinaryOperator):
-    token = "adv"
+    token = "max"
     precedence = 100
 
     def evaluate(self, rng, trials):
@@ -192,7 +192,7 @@ class Advantage(BinaryOperator):
 
 
 class Disadvantange(BinaryOperator):
-    token = "disadv"
+    token = "min"
     precedence = 100
 
     def evaluate(self, rng, trials):

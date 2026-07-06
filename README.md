@@ -44,8 +44,8 @@ Outputs:
 - `<=` - Less than or equal (returns 1 if true, 0 if false)
 - `==` - Equal (returns 1 if true, 0 if false)
 - `!=` - Not equal (returns 1 if true, 0 if false)
-- `adv` - Advantage: takes the maximum of two rolls
-- `disadv` - Disadvantage: takes the minimum of two rolls
+- `max` - Maximum: takes the maximum of two values (e.g. for Advantage)
+- `min` - Minimum: takes the minimum of two values (e.g. for Disadvantage)
 
 ### Unary Operators (apply to one value)
 - `-` - Negation (multiply by -1)
@@ -53,9 +53,9 @@ Outputs:
 ### Examples
 - `d20` - Roll a 20-sided die
 - `2d6 + 5` - Roll two 6-sided dice and add 5
-- `d20 adv d20 + 5` - Roll d20 with advantage and add 5
+- `d20 max d20 + 5` - Roll d20 with advantage and add 5
 - `(d20 >= 15)` - Check if d20 roll is 15 or higher (1 for success, 0 for failure)
-- `(d20 adv d20 + 5 >= 15) * (2d6 + 5)` - Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
+- `(d20 max d20 + 5 >= 15) * (2d6 + 5)` - Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
 - `(d20 + 5 >= 15) * (2d6 + 5) + (d20 + 5 >= 15) * (1d4 + 5)` - Two attack rolls, both against the same AC and with the same attack bonuses, but with different damage values.
 
 ## Installation
