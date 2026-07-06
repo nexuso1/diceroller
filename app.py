@@ -167,9 +167,8 @@ def main():
     )
 
     st.title("Dice Roll Expected Value Calculator", text_alignment='center')
+    st.set_page_config(page_title="Dice Calculator")
     st.divider()
-
-
     
     with st.sidebar.container():
         trials = st.slider("Trials", min_value=1000, max_value=250_000, value=100_000, step=1000)
