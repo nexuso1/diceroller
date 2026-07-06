@@ -76,7 +76,7 @@ def main():
         stddev = float(np.std(values, ddof=1))
 
         with summary_col:
-            st.subheader("Result Summary", text_alignment='left')
+            st.subheader("Result Summary", text_alignment='center')
             st.table(
                 {
                     "Mean" : f"{mean:.3f}",
