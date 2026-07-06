@@ -46,6 +46,9 @@ def main():
                 max-width: 100%;
                 padding: 0 1rem;
             }
+            [data-testid="column"] {
+                width: 100% !important;
+            }
         }
     </style>
     """
