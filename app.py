@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
-from calc import simulate_distribution
+from calc import simulate_distribution, ParseError
+MAX_COMBINATIONS=200
 
 def parse_variable_values(value_str):
     """Parse variable values from string format.
@@ -42,6 +43,11 @@ def handle_single_variable(expression, var_name, var_values, trials, seed):
     """Handle simulation for a single variable"""
     results = []
     sim_data = {}
+
+    if len(var_values) > MAX_COMBINATIONS:
+        st.error("Too many value combinations. Reduce the ranges of variables")
+        usage_guide()
+        return
     
     for value in var_values:
         expr = substitute_variables(expression, {var_name: value})
@@ -62,6 +68,11 @@ def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_val
     results_mean = {}
     results_median = {}
     sim_data = {}
+
+    if len(var1_values) * len(var2_values) > MAX_COMBINATIONS:
+        st.error("Too many value combinations. Reduce the ranges of variables")
+        usage_guide()
+        return
     
     for v1 in var1_values:
         results_mean[v1] = {}
@@ -76,7 +87,15 @@ def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_val
             results_median[v1][v2] = int(np.median(sim_values))
             sim_data[v1][v2] = sim_values
     
-    return (pd.DataFrame(results_mean), pd.DataFrame(results_median), sim_data)
+    df_mean = pd.DataFrame(results_mean)
+    df_mean.index.name = var1_name
+    df_mean.columns.name = var2_name
+    
+    df_median = pd.DataFrame(results_median)
+    df_median.index.name = var1_name
+    df_median.columns.name = var2_name
+    
+    return (df_mean, df_median, sim_data)
 
 def display_single_variable(expression, var_name, var_values, trials, seed):
     """Display results for single variable case"""
@@ -97,7 +116,7 @@ def display_single_variable(expression, var_name, var_values, trials, seed):
             df_dist = pd.DataFrame({"result": values})
             plot_dist_df(df_dist)
 
-def plot_dist_df(df):
+def plot_dist_df(df, **kwargs):
     counts = df["result"].value_counts().sort_index(ascending=True)
     probabilities = counts / np.sum(counts)
     cumulative_probs = probabilities.cumsum()
@@ -143,7 +162,7 @@ def plot_dist_df(df):
     )
     
     fig.update_xaxes(tickangle=0)
-    st.plotly_chart(fig, use_container_width=True, height='stretch')
+    st.plotly_chart(fig, use_container_width=True, **kwargs)
 
 def display_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed):
     """Display results for two variables case"""
@@ -238,30 +257,30 @@ def main():
     
     variables = st.session_state.variables
     
-    col_add, col_count = st.columns([0.9, 0.1])
+    col_add, col_count = st.columns([0.8, 0.2])
     with col_add:
         if st.button("Add Variable", key="add_var_btn"):
             if len(variables) < 2:
                 var_id = f"var_{len(variables)}"
-                variables[var_id] = {"name": "", "values": ""}
+                variables[var_id] = {"name": "n", "values": "1-5"}
                 st.session_state.variables = variables
                 st.rerun()
     
     with col_count:
-        st.text(f"{len(variables)}/2")
+        st.text(f"Current number of variables: {len(variables)}/2", text_alignment='right')
     
     # Display existing variables
     for var_id in list(variables.keys()):
         var_data = variables[var_id]
-        with st.expander(f"📝 {var_data.get('name', 'Unnamed variable')}", expanded=True):
+        with st.expander(f"{var_data.get('name', 'Unnamed variable')}", expanded=True):
             col1, col2, col_delete = st.columns([0.4, 0.4, 0.2])
             with col1:
-                name = st.text_input("Variable name", value=var_data.get('name', ''), key=f"{var_id}_name")
+                name = st.text_input("Variable name", value=var_data.get('name', 'n'), key=f"{var_id}_name")
                 variables[var_id]['name'] = name
             with col2:
                 values = st.text_input(
                     "Values (e.g., 1,2,3 or 1-5 or 1-6:2)", 
-                    value=var_data.get('values', ''), 
+                    value=var_data.get('values', '1-5'), 
                     key=f"{var_id}_values",
                     help="List: 1,2,3 | Range: 1-5 | Range with step: 1-6:2"
                 )
@@ -298,45 +317,59 @@ def main():
                 valid_variables[var_data['name']] = parsed_values
     
     if run:
-        with st.spinner("Simulating distribution..."):
-            # Case 1: No variables - single simulation
-            if not valid_variables:
-                values = simulate_distribution(expression, trials=int(trials), seed=int(seed))
-                st.session_state.sim_results = {
-                    'type': 'single',
-                    'values': values
-                }
-            
-            # Case 2: One variable
-            elif len(valid_variables) == 1:
-                var_name = list(valid_variables.keys())[0]
-                var_values = valid_variables[var_name]
-                df, sim_data = handle_single_variable(expression, var_name, var_values, trials, seed)
-                st.session_state.sim_results = {
-                    'type': 'single_var',
-                    'var_name': var_name,
-                    'var_values': var_values,
-                    'df': df,
-                    'sim_data': sim_data
-                }
-            
-            # Case 3: Two variables
-            elif len(valid_variables) == 2:
-                var_names = list(valid_variables.keys())
-                var1_name, var2_name = var_names[0], var_names[1]
-                var1_values, var2_values = valid_variables[var1_name], valid_variables[var2_name]
-                df_mean, df_median, sim_data = handle_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed)
-                st.session_state.sim_results = {
-                    'type': 'two_var',
-                    'var1_name': var1_name,
-                    'var2_name': var2_name,
-                    'var1_values': var1_values,
-                    'var2_values': var2_values,
-                    'df_mean': df_mean,
-                    'df_median': df_median,
-                    'sim_data': sim_data
-                }
-    
+        try:
+            with st.spinner("Simulating distribution..."):
+                # Case 1: No variables - single simulation
+                if not valid_variables:
+                    values = simulate_distribution(expression, trials=int(trials), seed=int(seed))
+                    st.session_state.sim_results = {
+                        'type': 'single',
+                        'values': values
+                    }
+                
+                # Case 2: One variable
+                elif len(valid_variables) == 1:
+                    var_name = list(valid_variables.keys())[0]
+                    var_values = valid_variables[var_name]
+                    results = handle_single_variable(expression, var_name, var_values, trials, seed)
+                    
+                    if not results:
+                        return
+                    
+                    df, sim_data = results
+                    st.session_state.sim_results = {
+                        'type': 'single_var',
+                        'var_name': var_name,
+                        'var_values': var_values,
+                        'df': df,
+                        'sim_data': sim_data
+                    }
+                
+                # Case 3: Two variables
+                elif len(valid_variables) == 2:
+                    var_names = list(valid_variables.keys())
+                    var1_name, var2_name = var_names[0], var_names[1]
+                    var1_values, var2_values = valid_variables[var1_name], valid_variables[var2_name]
+                    results = handle_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed)
+                    if not results:
+                        return
+                    
+                    df_mean, df_median, sim_data = results
+                    st.session_state.sim_results = {
+                        'type': 'two_var',
+                        'var1_name': var1_name,
+                        'var2_name': var2_name,
+                        'var1_values': var1_values,
+                        'var2_values': var2_values,
+                        'df_mean': df_mean,
+                        'df_median': df_median,
+                        'sim_data': sim_data
+                    }
+        except ParseError as e:
+            st.error(e)
+            usage_guide()
+            return
+        
     # Display results if they exist in session state
     if 'sim_results' in st.session_state:
         results = st.session_state.sim_results
@@ -384,7 +417,7 @@ def main():
             with summary_col:
                 st.subheader("Result Summary", text_alignment='center')
                 st.text("Mean", text_alignment='center')
-                styled_mean = results['df_mean'].style.background_gradient(cmap=matrix_cmap)
+                styled_mean = results['df_mean'].style.background_gradient(cmap=matrix_cmap).format("{:.2f}")
                 st.dataframe(styled_mean, use_container_width=True)
                 st.text("Median", text_alignment='center')
                 styled_median = results['df_median'].style.background_gradient(cmap=matrix_cmap)
@@ -401,7 +434,7 @@ def main():
                 if selected_v1 in results['sim_data'] and selected_v2 in results['sim_data'][selected_v1]:
                     values = results['sim_data'][selected_v1][selected_v2]
                     df = pd.DataFrame({"result": values})
-                    plot_dist_df(df)
+                    plot_dist_df(df, height='stretch')
     
     usage_guide()
 

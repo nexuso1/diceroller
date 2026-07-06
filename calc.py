@@ -81,7 +81,7 @@ def parse(expr):
         if token.isdigit():
             return Number(token)
 
-        raise ParseError(f"Unexpected token: {token}")
+        raise ParseError(f"Unexpected token: {token}. Make sure that operators and variable names are specified correctly in the expression.")
 
     def parse_led(op, left):
         operator_cls = operator_registry.get_binary(op)
