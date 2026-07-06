@@ -97,25 +97,6 @@ def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_val
     
     return (df_mean, df_median, sim_data)
 
-def display_single_variable(expression, var_name, var_values, trials, seed):
-    """Display results for single variable case"""
-    df, sim_data = handle_single_variable(expression, var_name, var_values, trials, seed)
-    
-    summary_col, graph_col = st.columns([0.35, 0.65], gap='medium')
-    
-    with summary_col:
-        st.subheader("Result Summary", text_alignment='center')
-        st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    with graph_col:
-        st.subheader("Result Distribution", text_alignment='center')
-        selected_value = st.slider(f"Select {var_name} value:", min_value=min(var_values), max_value=max(var_values), value=var_values[0])
-        
-        if selected_value in sim_data:
-            values = sim_data[selected_value]
-            df_dist = pd.DataFrame({"result": values})
-            plot_dist_df(df_dist)
-
 def plot_dist_df(df, **kwargs):
     counts = df["result"].value_counts().sort_index(ascending=True)
     probabilities = counts / np.sum(counts)
@@ -163,31 +144,6 @@ def plot_dist_df(df, **kwargs):
     
     fig.update_xaxes(tickangle=0)
     st.plotly_chart(fig, use_container_width=True, **kwargs)
-
-def display_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed):
-    """Display results for two variables case"""
-    df_mean, df_median, sim_data = handle_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed)
-    
-    summary_col, graph_col = st.columns([0.35, 0.65], gap='medium')
-    
-    with summary_col:
-        st.subheader("Result Summary - Mean", text_alignment='center')
-        st.dataframe(df_mean, use_container_width=True,)
-        st.subheader("Result Summary - Median", text_alignment='center')
-        st.dataframe(df_median, use_container_width=True)
-    
-    with graph_col:
-        st.subheader("Result Distribution", text_alignment='center')
-        col1, col2 = st.columns(2)
-        with col1:
-            selected_v1 = st.slider(f"Select {var1_name}:", min_value=min(var1_values), max_value=max(var1_values), value=var1_values[0])
-        with col2:
-            selected_v2 = st.slider(f"Select {var2_name}:", min_value=min(var2_values), max_value=max(var2_values), value=var2_values[0])
-        
-        if selected_v1 in sim_data and selected_v2 in sim_data[selected_v1]:
-            values = sim_data[selected_v1][selected_v2]
-            df = pd.DataFrame({"result": values})
-            plot_dist_df(df)
             
 def usage_guide():
     st.markdown("""
@@ -273,7 +229,7 @@ def main():
     for var_id in list(variables.keys()):
         var_data = variables[var_id]
         with st.expander(f"{var_data.get('name', 'Unnamed variable')}", expanded=True):
-            col1, col2, col_delete = st.columns([0.4, 0.4, 0.2])
+            col1, col2 = st.columns([0.5, 0.5])
             with col1:
                 name = st.text_input("Variable name", value=var_data.get('name', 'n'), key=f"{var_id}_name")
                 variables[var_id]['name'] = name
@@ -285,13 +241,12 @@ def main():
                     help="List: 1,2,3 | Range: 1-5 | Range with step: 1-6:2"
                 )
                 variables[var_id]['values'] = values
-            with col_delete:
-                if st.button("Delete", key=f"{var_id}_delete", help="Remove this variable"):
-                    del variables[var_id]
-                    if 'sim_results' in st.session_state:
-                        del st.session_state['sim_results']
-                    st.session_state.variables = variables
-                    st.rerun()
+            if st.button("Delete", key=f"{var_id}_delete", help="Remove this variable"):
+                del variables[var_id]
+                if 'sim_results' in st.session_state:
+                    del st.session_state['sim_results']
+                st.session_state.variables = variables
+                st.rerun()
             
             # Show parsed values if available
             if values:
@@ -332,7 +287,7 @@ def main():
                     var_name = list(valid_variables.keys())[0]
                     var_values = valid_variables[var_name]
                     results = handle_single_variable(expression, var_name, var_values, trials, seed)
-                    
+
                     if not results:
                         return
                     
