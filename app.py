@@ -39,6 +39,7 @@ def substitute_variables(expression, var_dict):
         result = result.replace(var_name, str(value))
     return result
 
+@st.cache_data
 def handle_single_variable(expression, var_name, var_values, trials, seed):
     """Handle simulation for a single variable"""
     results = []
@@ -63,6 +64,7 @@ def handle_single_variable(expression, var_name, var_values, trials, seed):
     
     return pd.DataFrame(results), sim_data
 
+@st.cache_data
 def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed):
     """Handle simulation for two variables"""
     results_mean = {}
