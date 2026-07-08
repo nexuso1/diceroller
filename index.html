@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>My Streamlit App on GitHub Pages</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.71.0/build/stlite.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.71.0/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: [pandas, numpy, matplotlib, plotly], // Add your pip packages here, e.g., ["pandas", "matplotlib"]
+        entrypoint: "app.py",
+        files: {
+          "app.py": `
+import streamlit as st
+
+st.title("Hello from GitHub Pages! 🚀")
+st.write("This Streamlit app is running completely inside your browser.")
+
+name = st.text_input("What is your name?")
+if name:
+    st.write(f"Welcome, {name}!")
+`,
+        },
+      }, document.getElementById("root"));
+    </script>
+  </body>
+</html>
