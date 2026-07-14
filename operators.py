@@ -199,7 +199,6 @@ class Repeat(BinaryOperator):
         results = [self.left.evaluate(rng, trials) for _ in range(n)]
         return np.asarray(results, dtype=np.float32).sum(0)
     
-
 class Range(BinaryOperator):
     token = ":"
     precedence = 106
@@ -229,7 +228,7 @@ class Reroll(BinaryOperator):
             mask = rolls == to_reroll
 
         rolls[mask] = self.left.evaluate(rng, trials=mask.sum(), count=1, return_rolls=True).reshape(-1)
-        return rolls.sum(-1)
+        return rolls.reshape(trials, -1).sum(-1)
 
 def _register_operators():
     module = globals()
