@@ -20,7 +20,7 @@ document.getElementById('calc-form').addEventListener('submit', async (e) => {
     const submitBtn = document.getElementById('submit-btn');
 
     // UI Loading state
-    submitBtn.innerText = "Simulating...";
+    submitBtn.innerText = "Running...";
     submitBtn.disabled = true;
     errorBox.style.display = 'none';
 
