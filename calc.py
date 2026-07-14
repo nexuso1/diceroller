@@ -6,7 +6,7 @@ import numpy as np
 
 from operators import DiceRoll, Number, operator_registry
 
-TOKEN_RE = re.compile(r"\s*([a-z]+|\d+|>=|<=|!=|==|[<>+\-*/()])")
+TOKEN_RE = re.compile(r"\s*([a-z]+|\d+|>=|<=|!=|==|[<>+\-*/()\:])")
 
 
 class ParseError(Exception):

@@ -42,10 +42,10 @@ operator_registry = Registry()
 
 class Number(Operator):
     def __init__(self, value):
-        self.value = float(value)
+        self.value = np.float32(value)
 
     def evaluate(self, rng, trials):
-        return np.full(trials, self.value, dtype=np.float64)
+        return self.value
 
 
 class UnaryOperator(Operator):
@@ -77,31 +77,23 @@ class BinaryOperator(Operator):
 
 class DiceRoll(BinaryOperator):
     token = "d"
-    precedence = 101
+    precedence = 110
 
-    def evaluate(self, rng, trials):
-        count_values = self.left.evaluate(rng, trials).astype(np.int64)
-        sides_values = self.right.evaluate(rng, trials).astype(np.int64)
+    def evaluate(self, rng, trials, return_rolls=False, count=None):
+        if count is None:
+            count = self.left.evaluate(rng, trials).astype(np.int32)
+        self.sides = self.right.evaluate(rng, trials).astype(np.int32)
 
-        if np.all(count_values == count_values[0]) and np.all(sides_values == sides_values[0]):
-            count = int(count_values[0])
-            sides = int(sides_values[0])
-            if count < 1 or sides < 1:
-                raise ValueError("Dice count and sides must be positive")
-            if count == 1:
-                return rng.integers(1, sides + 1, size=trials, dtype=np.int64).astype(np.float64)
-            rolls = rng.integers(1, sides + 1, size=(trials, count), dtype=np.int64).astype(np.float64)
-            return rolls.sum(axis=1)
+        if count < 1 or self.sides < 1:
+            raise ValueError("Dice count and sides must be positive")
+        if count == 1:
+            return rng.integers(1, self.sides + 1, size=trials, dtype=np.int32).astype(np.float32)
+        rolls = rng.integers(1, self.sides + 1, size=(trials, count), dtype=np.int32).astype(np.float32)
 
-        results = np.empty(trials, dtype=np.float64)
-        for i in range(trials):
-            count = int(count_values[i])
-            sides = int(sides_values[i])
-            if count < 1 or sides < 1:
-                raise ValueError("Dice count and sides must be positive")
-            results[i] = rng.integers(1, sides + 1, size=count, dtype=np.int64).astype(np.float64).sum()
-        return results
-
+        if return_rolls:
+            return rolls
+        
+        return rolls.sum(-1)
 
 class Add(BinaryOperator):
     token = "+"
@@ -140,7 +132,7 @@ class Greater(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) > self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) > self.right.evaluate(rng, trials)).astype(np.float32)
 
 
 class Less(BinaryOperator):
@@ -148,7 +140,7 @@ class Less(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) < self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) < self.right.evaluate(rng, trials)).astype(np.float32)
 
 
 class GreaterEqual(BinaryOperator):
@@ -156,7 +148,7 @@ class GreaterEqual(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) >= self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) >= self.right.evaluate(rng, trials)).astype(np.float32)
 
 
 class LessEqual(BinaryOperator):
@@ -164,7 +156,7 @@ class LessEqual(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) <= self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) <= self.right.evaluate(rng, trials)).astype(np.float32)
 
 
 class Equal(BinaryOperator):
@@ -172,7 +164,7 @@ class Equal(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) == self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) == self.right.evaluate(rng, trials)).astype(np.float32)
 
 
 class NotEqual(BinaryOperator):
@@ -180,24 +172,64 @@ class NotEqual(BinaryOperator):
     precedence = 10
 
     def evaluate(self, rng, trials):
-        return (self.left.evaluate(rng, trials) != self.right.evaluate(rng, trials)).astype(np.float64)
+        return (self.left.evaluate(rng, trials) != self.right.evaluate(rng, trials)).astype(np.float32)
 
 
-class Advantage(BinaryOperator):
+class Max(BinaryOperator):
     token = "max"
     precedence = 100
 
     def evaluate(self, rng, trials):
-        return np.maximum(self.left.evaluate(rng, trials), self.right.evaluate(rng, trials)).astype(np.float64)
+        return np.maximum(self.left.evaluate(rng, trials), self.right.evaluate(rng, trials)).astype(np.float32)
 
 
-class Disadvantange(BinaryOperator):
+class Min(BinaryOperator):
     token = "min"
     precedence = 100
 
     def evaluate(self, rng, trials):
-        return np.minimum(self.left.evaluate(rng, trials), self.right.evaluate(rng, trials)).astype(np.float64)
+        return np.minimum(self.left.evaluate(rng, trials), self.right.evaluate(rng, trials)).astype(np.float32)
+    
+class Repeat(BinaryOperator):
+    token = "repeat"
+    precedence = 10
 
+    def evaluate(self, rng, trials):
+        n = int(self.right.evaluate(rng, trials))
+        results = [self.left.evaluate(rng, trials) for _ in range(n)]
+        return np.asarray(results, dtype=np.float32).sum(0)
+    
+
+class Range(BinaryOperator):
+    token = ":"
+    precedence = 106
+
+    def evaluate(self, rng, trials):
+        start = self.left.evaluate(rng, trials)
+        stop = self.right.evaluate(rng, trials)
+        return np.asarray([i for i in range(int(start), int(stop) + 1)])
+
+class Reroll(BinaryOperator):
+    token = "reroll"
+    precedence = 105
+
+    def evaluate(self, rng, trials):
+        try:
+            rolls = self.left.evaluate(rng, trials, return_rolls=True)
+        except TypeError:
+            raise ValueError('Reroll operator expects a dice roll as the left operand.')
+        
+        to_reroll = self.right.evaluate(rng, trials)
+        mask = np.zeros_like(rolls, dtype=np.bool)
+
+        if len(to_reroll.shape) > 0: 
+            for val in to_reroll:
+                mask = mask | (rolls == val)
+        else:
+            mask = rolls == to_reroll
+
+        rolls[mask] = self.left.evaluate(rng, trials=mask.sum(), count=1, return_rolls=True).reshape(-1)
+        return rolls.sum(-1)
 
 def _register_operators():
     module = globals()
