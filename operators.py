@@ -192,7 +192,7 @@ class Min(BinaryOperator):
     
 class Repeat(BinaryOperator):
     token = "repeat"
-    precedence = 10
+    precedence = 5
 
     def evaluate(self, rng, trials):
         n = int(self.right.evaluate(rng, trials))

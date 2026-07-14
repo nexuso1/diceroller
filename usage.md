@@ -5,6 +5,7 @@
 
 ## Binary Operators (combine two values)
 - `d` - Dice roll: `NdS` rolls N dice with S sides
+  - Has the highest precedence
 - `+` - Addition
 - `-` - Subtraction
 - `*` - Multiplication
@@ -17,6 +18,18 @@
 - `!=` - Not equal (returns 1 if true, 0 if false)
 - `max` - Maximum: takes the maximum of two values (e.g for Advantage)
 - `min` - Minimum: takes the minimum of two values (e.g. for Disadvantage)
+- `reroll` - Reroll unmodified values and take the new result. Supports ranges as the left operand. 
+  - Syntax: `[dice roll] reroll [number or range]`
+  - Has the second highest precedence
+  - Examples:
+    - `2d6 reroll 1` - Roll two `d6` dice, and for each die, reroll a result of `1`.
+    - `2d6 reroll 1:2` - Re-rolls results of `1` and `2`
+    - `2d6 reroll i:j` - Roll two `d6` dice, and for each die, reroll a result of `i` up to `j` (inclusive)
+- `repeat` - Repeat a computation `n` times, sum the results
+  - Syntax `[expression] repeat [n_repetitions]`
+  - Has the lowest precedence
+  - Example: `(d20 + 5 >= 15) * (2d6 + 3) repeat 2`
+
 
 ## Unary Operators (apply to one value)
 - `-` - Negation (multiply by -1)
