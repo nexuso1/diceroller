@@ -39,6 +39,7 @@ def substitute_variables(expression, var_dict):
         result = result.replace(var_name, str(value))
     return result
 
+@st.cache_data
 def handle_single_variable(expression, var_name, var_values, trials, seed):
     """Handle simulation for a single variable"""
     results = []
@@ -63,6 +64,7 @@ def handle_single_variable(expression, var_name, var_values, trials, seed):
     
     return pd.DataFrame(results), sim_data
 
+@st.cache_data
 def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_values, trials, seed):
     """Handle simulation for two variables"""
     results_mean = {}
@@ -96,7 +98,8 @@ def handle_two_variables(expression, var1_name, var1_values, var2_name, var2_val
     df_median.columns.name = var2_name
     
     return (df_mean, df_median, sim_data)
-
+    
+@st.cache_data
 def plot_dist_df(df, **kwargs):
     counts = df["result"].value_counts().sort_index(ascending=True)
     probabilities = counts / np.sum(counts)
@@ -144,7 +147,8 @@ def plot_dist_df(df, **kwargs):
     
     fig.update_xaxes(tickangle=0)
     st.plotly_chart(fig, use_container_width=True, **kwargs)
-            
+
+@st.cache_resource
 def usage_guide():
     with open('usage.md', 'r') as f:
         st.markdown(f.read())
