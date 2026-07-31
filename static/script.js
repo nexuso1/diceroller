@@ -4,8 +4,21 @@ const variablesContainer = document.getElementById('variables-list');
 const varCountLabel = document.getElementById('var-count-lbl');
 const addVarButton = document.getElementById('add-var-btn');
 
+// Multi-variable result view controls
+const viewControls = document.getElementById('view-controls');
+const viewModeSelect = document.getElementById('view-mode');
+const matrixRowSelect = document.getElementById('matrix-row-var');
+const matrixColSelect = document.getElementById('matrix-col-var');
+const matrixMetricSelect = document.getElementById('matrix-metric');
+const matrixSliceContainer = document.getElementById('matrix-slice-controls');
+
+// Last sweep payload, kept so the view can be re-rendered without re-simulating
+let lastMultiData = null;
+// Fixed values for variables that are not on either matrix axis, keyed by name
+let sliceSelections = {};
+
 // Maximum parallel variables to avoid browser lockup
-const MAX_VARIABLES = 3; 
+const MAX_VARIABLES = 3;
 
 // Initial Mockup values to populate on launch
 const initialVars = [];
@@ -187,6 +200,8 @@ document.getElementById('calc-form').addEventListener('submit', async (e) => {
                 // SINGLE MODE: Show Chart, Render 1x3 metric table
                 chartSection.style.display = 'block';
                 dashboardGrid.className = "dashboard-grid single-mode";
+                viewControls.style.display = 'none';
+                lastMultiData = null;
 
                 table.innerHTML = `
                     <thead>
@@ -213,34 +228,14 @@ document.getElementById('calc-form').addEventListener('submit', async (e) => {
                 renderChart(data.chart_data);
 
             } else {
-                // VARIABLE SWEEP MODE: Hide Chart, render wide sweep table
+                // VARIABLE SWEEP MODE: Hide Chart, render sweep table (list or matrix)
                 chartSection.style.display = 'none';
                 dashboardGrid.className = "dashboard-grid"; // 1 Full column width grid
+                viewControls.style.display = 'flex';
 
-                // Build Table headers for each variable dynamically
-                let headerHTML = '<tr>';
-                data.variables_ordered.forEach(vName => {
-                    headerHTML += `<th>Var (${vName})</th>`;
-                });
-                headerHTML += '<th>Mean</th><th>Median</th><th>Std Dev</th></tr>';
-
-                // Build rows
-                let bodyHTML = '';
-                data.results.forEach(row => {
-                    bodyHTML += '<tr>';
-                    // Render variables values
-                    data.variables_ordered.forEach(vName => {
-                        bodyHTML += `<td style="font-family: monospace;">${row.combination[vName]}</td>`;
-                    });
-                    // Render outputs
-                    bodyHTML += `
-                        <td style="font-weight: 600;">${row.mean.toFixed(3)}</td>
-                        <td style="font-weight: 600;">${row.median}</td>
-                        <td>${row.std.toFixed(3)}</td>
-                    </tr>`;
-                });
-
-                table.innerHTML = `<thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody>`;
+                lastMultiData = data;
+                setupMultiControls(data);
+                renderMultiResults();
             }
 
         } else {
@@ -259,8 +254,197 @@ document.getElementById('calc-form').addEventListener('submit', async (e) => {
     }
 });
 
-// 5. Plasma Colored Chart Renderer
+// 5. Multi-variable result views (flat list vs. two-variable matrix)
+// Tracks whether the user picked a view themselves; until then the matrix is the default
+let userChoseView = false;
+
+const HEAT_METRICS = ['mean', 'median', 'std'];
+
+function formatMetric(metric, value) {
+    if (typeof value !== 'number' || !isFinite(value)) return '—';
+    // Medians of integer distributions are integers; keep them free of noise decimals
+    return metric === 'median' && Number.isInteger(value) ? String(value) : value.toFixed(3);
+}
+
+// Plasma fill scaled between min and max, with text kept readable on both ends
+function heatStyle(value, min, max) {
+    if (typeof value !== 'number' || !isFinite(value)) return '';
+    const t = max > min ? (value - min) / (max - min) : 0.5;
+    const c = getPlasmaRGB(t);
+    const luminance = (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+    return `background-color: rgb(${c.r}, ${c.g}, ${c.b}); color: ${luminance > 0.55 ? '#1e293b' : '#f8fafc'};`;
+}
+
+// Value range per metric, so each list column is shaded on its own scale
+function metricRanges(rows) {
+    const ranges = {};
+    HEAT_METRICS.forEach(metric => {
+        const values = rows.map(r => r[metric]).filter(v => typeof v === 'number' && isFinite(v));
+        ranges[metric] = { min: Math.min(...values), max: Math.max(...values) };
+    });
+    return ranges;
+}
+
+function uniqueValues(data, varName) {
+    return [...new Set(data.results.map(r => r.combination[varName]))].sort((a, b) => a - b);
+}
+
+function fillVarOptions(select, names, preferred) {
+    select.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (names.includes(preferred)) select.value = preferred;
+}
+
+// Populate the axis dropdowns, keeping the user's previous picks when still valid
+function setupMultiControls(data) {
+    const names = data.variables_ordered;
+
+    // A matrix needs two axes; fall back to the list view with a single variable
+    const matrixOption = viewModeSelect.querySelector('option[value="matrix"]');
+    matrixOption.disabled = names.length < 2;
+    if (names.length < 2) {
+        viewModeSelect.value = 'list';
+    } else if (!userChoseView) {
+        // Matrix is the default whenever there are enough variables for one
+        viewModeSelect.value = 'matrix';
+    }
+
+    fillVarOptions(matrixRowSelect, names, matrixRowSelect.value);
+    const previousCol = matrixColSelect.value;
+    const colPreferred = (names.includes(previousCol) && previousCol !== matrixRowSelect.value)
+        ? previousCol
+        : names.find(n => n !== matrixRowSelect.value);
+    fillVarOptions(matrixColSelect, names, colPreferred);
+}
+
+// Dropdowns fixing the value of every variable that isn't on an axis
+function renderSliceControls(data, rowVar, colVar) {
+    const others = data.variables_ordered.filter(n => n !== rowVar && n !== colVar);
+    matrixSliceContainer.innerHTML = '';
+
+    others.forEach((name, idx) => {
+        const values = uniqueValues(data, name);
+        if (!values.some(v => String(v) === String(sliceSelections[name]))) {
+            sliceSelections[name] = values[0];
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'control-item';
+        wrapper.innerHTML = `
+            <label for="slice-select-${idx}">${name} =</label>
+            <select id="slice-select-${idx}">
+                ${values.map(v => `<option value="${v}"${String(v) === String(sliceSelections[name]) ? ' selected' : ''}>${v}</option>`).join('')}
+            </select>
+        `;
+        wrapper.querySelector('select').addEventListener('change', (e) => {
+            sliceSelections[name] = e.target.value;
+            renderMultiResults();
+        });
+        matrixSliceContainer.appendChild(wrapper);
+    });
+}
+
+function buildListTable(data) {
+    let headerHTML = '<tr>';
+    data.variables_ordered.forEach(vName => {
+        headerHTML += `<th>Var (${vName})</th>`;
+    });
+    headerHTML += '<th>Mean</th><th>Median</th><th>Std Dev</th></tr>';
+
+    // Each metric column is shaded independently over its own value range
+    const ranges = metricRanges(data.results);
+
+    let bodyHTML = '';
+    data.results.forEach(row => {
+        bodyHTML += '<tr>';
+        data.variables_ordered.forEach(vName => {
+            bodyHTML += `<td style="font-family: monospace;">${row.combination[vName]}</td>`;
+        });
+        HEAT_METRICS.forEach(metric => {
+            const style = heatStyle(row[metric], ranges[metric].min, ranges[metric].max);
+            bodyHTML += `<td class="heat-cell" style="${style}">${formatMetric(metric, row[metric])}</td>`;
+        });
+        bodyHTML += '</tr>';
+    });
+
+    return `<thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody>`;
+}
+
+function buildMatrixTable(data, rowVar, colVar, metric) {
+    const rowValues = uniqueValues(data, rowVar);
+    const colValues = uniqueValues(data, colVar);
+    const fixedVars = data.variables_ordered.filter(n => n !== rowVar && n !== colVar);
+
+    // Index the sweep results by (row value, column value) for the current slice
+    const cells = new Map();
+    data.results.forEach(r => {
+        const combo = r.combination;
+        if (!fixedVars.every(n => String(combo[n]) === String(sliceSelections[n]))) return;
+        cells.set(`${combo[rowVar]}|${combo[colVar]}`, r[metric]);
+    });
+
+    const numeric = [...cells.values()].filter(v => typeof v === 'number' && isFinite(v));
+    const min = Math.min(...numeric);
+    const max = Math.max(...numeric);
+
+    let headerHTML = `<tr><th class="matrix-corner">${rowVar} \\ ${colVar}</th>`;
+    colValues.forEach(cv => { headerHTML += `<th class="matrix-axis">${cv}</th>`; });
+    headerHTML += '</tr>';
+
+    let bodyHTML = '';
+    rowValues.forEach(rv => {
+        bodyHTML += `<tr><th scope="row" class="matrix-axis">${rv}</th>`;
+        colValues.forEach(cv => {
+            const value = cells.get(`${rv}|${cv}`);
+            bodyHTML += `<td class="matrix-cell heat-cell" style="${heatStyle(value, min, max)}">${formatMetric(metric, value)}</td>`;
+        });
+        bodyHTML += '</tr>';
+    });
+
+    return `<thead>${headerHTML}</thead><tbody>${bodyHTML}</tbody>`;
+}
+
+function renderMultiResults() {
+    if (!lastMultiData) return;
+
+    const data = lastMultiData;
+    const table = document.getElementById('summary-table');
+    const isMatrix = viewModeSelect.value === 'matrix' && data.variables_ordered.length >= 2;
+
+    viewControls.querySelectorAll('.matrix-only').forEach(el => {
+        el.style.display = isMatrix ? 'flex' : 'none';
+    });
+
+    if (!isMatrix) {
+        table.className = '';
+        table.innerHTML = buildListTable(data);
+        return;
+    }
+
+    const rowVar = matrixRowSelect.value;
+    // Both axes must differ; nudge the column axis off the row variable if needed
+    if (matrixColSelect.value === rowVar) {
+        matrixColSelect.value = data.variables_ordered.find(n => n !== rowVar);
+    }
+    const colVar = matrixColSelect.value;
+
+    renderSliceControls(data, rowVar, colVar);
+    table.className = 'matrix-table';
+    table.innerHTML = buildMatrixTable(data, rowVar, colVar, matrixMetricSelect.value);
+}
+
+[viewModeSelect, matrixRowSelect, matrixColSelect, matrixMetricSelect].forEach(select => {
+    select.addEventListener('change', renderMultiResults);
+});
+
+viewModeSelect.addEventListener('change', () => { userChoseView = true; });
+
+// 6. Plasma Colored Chart Renderer
 function getPlasmaColor(t) {
+  const c = getPlasmaRGB(t);
+  return `rgb(${c.r}, ${c.g}, ${c.b})`;
+}
+
+function getPlasmaRGB(t) {
   t = Math.max(0, Math.min(1, t));
   const plasmaPoints = [
     { r: 13,   g: 8,   b: 135 },
@@ -272,11 +456,8 @@ function getPlasmaColor(t) {
     { r: 240,  g: 249, b: 33  }
   ];
 
-  if (t === 0) return `rgb(${plasmaPoints[0].r}, ${plasmaPoints[0].g}, ${plasmaPoints[0].b})`;
-  if (t === 1) {
-    const last = plasmaPoints[plasmaPoints.length - 1];
-    return `rgb(${last.r}, ${last.g}, ${last.b})`;
-  }
+  if (t === 0) return plasmaPoints[0];
+  if (t === 1) return plasmaPoints[plasmaPoints.length - 1];
 
   const segmentCount = plasmaPoints.length - 1;
   const scaledT = t * segmentCount;
@@ -286,11 +467,11 @@ function getPlasmaColor(t) {
   const c1 = plasmaPoints[index];
   const c2 = plasmaPoints[index + 1];
 
-  const r = Math.round(c1.r + (c2.r - c1.r) * localT);
-  const g = Math.round(c1.g + (c2.g - c1.g) * localT);
-  const b = Math.round(c1.b + (c2.b - c1.b) * localT);
-
-  return `rgb(${r}, ${g}, ${b})`;
+  return {
+    r: Math.round(c1.r + (c2.r - c1.r) * localT),
+    g: Math.round(c1.g + (c2.g - c1.g) * localT),
+    b: Math.round(c1.b + (c2.b - c1.b) * localT)
+  };
 }
 
 function renderChart(chartData) {
