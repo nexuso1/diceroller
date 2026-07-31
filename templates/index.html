@@ -19,7 +19,17 @@
         <div class="input-group">
             <div class="input-wrapper">
                 <label for="expression">Input dice expression:</label>
-                <input type="text" id="expression" placeholder="Type an expression, e.g (d20 + 6 >= 15) * (2d6 + 5)" value="(d20 + 6 >= 15) * (2d6 + 5)" required>
+                <div class="input-with-history">
+                    <input type="text" id="expression" placeholder="Type an expression, e.g (d20 + 6 >= 15) * (2d6 + 5)" value="(d20 + 6 >= 15) * (2d6 + 5)" required>
+                    <button type="button" id="history-toggle" class="history-toggle" aria-expanded="false" aria-controls="history-panel" title="Previous simulations">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div id="history-panel" class="history-panel">
+                        <!-- Saved simulations render here -->
+                    </div>
+                </div>
             </div>
             <div style="display: flex; align-items: flex-end;">
                 <button type="submit" id="submit-btn" class="primary-btn">Simulate <span class="key-badge">S</span></button>
@@ -43,53 +53,33 @@
 
     <!-- Output Dashboard -->
     <div id="dashboard" class="result-section">
-        <div id="dashboard-grid" class="dashboard-grid">
-            <!-- Summary Table Section -->
-            <div>
-                <div class="results-header">
-                    <h2 style="margin-top: 0; font-size: 1.5rem; margin-bottom: 0;">Result Summary</h2>
+        <div id="main-result-view"></div>
 
-                    <!-- Multi-variable view controls (only shown in sweep mode) -->
-                    <div id="view-controls" class="view-controls">
-                        <div class="control-item">
-                            <label for="view-mode">View</label>
-                            <select id="view-mode">
-                                <option value="list">List</option>
-                                <option value="matrix">Matrix</option>
-                            </select>
-                        </div>
-                        <div class="control-item matrix-only">
-                            <label for="matrix-row-var">Rows</label>
-                            <select id="matrix-row-var"></select>
-                        </div>
-                        <div class="control-item matrix-only">
-                            <label for="matrix-col-var">Columns</label>
-                            <select id="matrix-col-var"></select>
-                        </div>
-                        <div class="control-item matrix-only">
-                            <label for="matrix-metric">Metric</label>
-                            <select id="matrix-metric">
-                                <option value="mean">Mean</option>
-                                <option value="median">Median</option>
-                                <option value="std">Standard deviation</option>
-                            </select>
-                        </div>
-                        <!-- Dropdowns to fix the value of any variable not on an axis -->
-                        <div id="matrix-slice-controls" class="matrix-only slice-controls"></div>
+        <!-- Comparison against a recorded simulation (hidden when nothing is recorded) -->
+        <div id="comparison-area" class="comparison-area">
+            <!-- Same layout as the expression row: stretching picker, button on the right.
+                 The picker only appears while the comparison is shown. -->
+            <div class="input-group">
+                <div class="control-item comparison-picker">
+                    <label for="comparison-input">Recorded simulation</label>
+                    <!-- Same read-only field + chevron pattern as the expression history -->
+                    <div class="input-with-history">
+                        <input type="text" id="comparison-input" class="picker-input" readonly aria-haspopup="listbox" placeholder="No simulation selected">
+                        <button type="button" id="comparison-picker-toggle" class="history-toggle" aria-expanded="false" aria-controls="comparison-options" title="Recorded simulations">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div id="comparison-options" class="history-panel"></div>
                     </div>
                 </div>
-                <div class="table-container">
-                    <table id="summary-table">
-                        <!-- Head and body will render dynamically depending on mode -->
-                    </table>
+                <div class="comparison-action">
+                    <button type="button" id="compare-btn" class="secondary-btn compare-btn" aria-expanded="false" aria-controls="comparison-panel">Compare results</button>
                 </div>
             </div>
 
-            <!-- Chart Section (Only visible/active in single mode) -->
-            <div id="chart-section-wrapper">
-                <div class="chart-container">
-                    <canvas id="distributionChart"></canvas>
-                </div>
+            <div id="comparison-panel" class="comparison-panel">
+                <div id="comparison-view"></div>
             </div>
         </div>
     </div>
@@ -98,6 +88,60 @@
     <div class="usage-guide">
         {{ guide_html|safe }}
     </div>
+
+    <!-- Single markup source for every result display; cloned once per view -->
+    <template id="result-view-template">
+        <div class="result-view">
+            <div class="results-header">
+                <h2 class="result-title"></h2>
+
+                <!-- Multi-variable view controls (only shown in sweep mode) -->
+                <div class="view-controls control-row">
+                    <div class="control-item">
+                        <label>View</label>
+                        <select class="view-mode">
+                            <option value="list">List</option>
+                            <option value="matrix">Matrix</option>
+                        </select>
+                    </div>
+                    <div class="control-item matrix-only">
+                        <label>Rows</label>
+                        <select class="matrix-row-var"></select>
+                    </div>
+                    <div class="control-item matrix-only">
+                        <label>Columns</label>
+                        <select class="matrix-col-var"></select>
+                    </div>
+                    <div class="control-item matrix-only">
+                        <label>Metric</label>
+                        <select class="matrix-metric">
+                            <option value="mean">Mean</option>
+                            <option value="median">Median</option>
+                            <option value="std">Standard deviation</option>
+                        </select>
+                    </div>
+                    <!-- Dropdowns to fix the value of any variable not on an axis -->
+                    <div class="matrix-only slice-controls control-row"></div>
+                </div>
+            </div>
+
+            <div class="result-grid dashboard-grid">
+                <!-- Summary Table Section -->
+                <div class="table-container">
+                    <table class="summary-table">
+                        <!-- Head and body will render dynamically depending on mode -->
+                    </table>
+                </div>
+
+                <!-- Chart Section (Only visible/active in single mode) -->
+                <div class="chart-section-wrapper">
+                    <div class="chart-container">
+                        <canvas></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <div class=""
 </div>

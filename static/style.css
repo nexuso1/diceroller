@@ -63,6 +63,69 @@ input:focus {
     background-color: #fff;
 }
 
+/* Expression input with its history dropdown */
+.input-with-history { position: relative; }
+.input-with-history input { padding-right: 3rem; }
+
+.history-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+}
+.history-toggle:hover { color: #1e293b; background-color: rgba(148, 163, 184, 0.2); }
+.history-toggle svg { transition: transform 0.2s; }
+.history-toggle.open svg { transform: rotate(180deg); }
+
+.history-panel {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    right: 0;
+    max-height: 20rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+.history-panel.open { display: block; }
+
+.history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.history-item:last-child { border-bottom: none; }
+.history-item:hover { background-color: #f8fafc; }
+.history-expression {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    color: #1e293b;
+    word-break: break-word;
+}
+.history-meta { font-size: 0.8rem; color: #64748b; }
+.history-empty { padding: 0.9rem; font-size: 0.9rem; color: #64748b; }
+
 /* Buttons */
 button.primary-btn {
     padding: 0.85rem 2rem;
@@ -181,8 +244,11 @@ button.primary-btn:hover { background-color: #e03e3e; }
         grid-template-columns: 1fr 1.5fr;
     }
 }
+/* Without this, a wide table stretches its grid track and scrolls the whole page
+   instead of scrolling inside its own container */
+.dashboard-grid > * { min-width: 0; }
 
-/* Results header + multi-variable view controls */
+/* Result headings and dropdown control rows */
 .results-header {
     display: flex;
     flex-direction: column;
@@ -197,25 +263,31 @@ button.primary-btn:hover { background-color: #e03e3e; }
         flex-wrap: wrap;
     }
 }
-.view-controls {
-    display: none; /* toggled on by script.js in sweep mode */
+.result-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+.results-header .control-row { margin-bottom: 0; }
+.control-row {
+    display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 0.75rem;
+    margin-bottom: 1rem;
 }
-.view-controls .control-item {
+.control-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
-.view-controls label {
+.control-item label {
     margin-bottom: 0;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #64748b;
 }
-.view-controls select {
+.control-item select {
     padding: 0.5rem 0.65rem;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -226,22 +298,19 @@ button.primary-btn:hover { background-color: #e03e3e; }
     color: #1e293b;
     cursor: pointer;
 }
-.view-controls select:focus {
+.control-item select:focus {
     outline: none;
     border-color: #2c76ff;
 }
-.view-controls select:disabled { color: #94a3b8; cursor: not-allowed; }
+.control-item select:disabled { color: #94a3b8; cursor: not-allowed; }
+
+.view-controls { display: none; } /* toggled to flex by script.js in sweep mode */
+.slice-controls { margin-bottom: 0; }
 /* Variable names are case sensitive, so don't upper-case these labels */
 .slice-controls label {
     text-transform: none;
     font-family: monospace;
     font-size: 0.85rem;
-}
-.slice-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.75rem;
 }
 
 /* Tables */
@@ -269,6 +338,47 @@ th {
     letter-spacing: 0.05em;
 }
 tr:last-child td { border-bottom: none; }
+
+/* Comparison against a recorded simulation */
+.comparison-area {
+    display: none; /* shown by script.js once something is recorded to compare against */
+    margin-top: -1.5rem;
+    margin-bottom: 3rem;
+}
+.comparison-panel { display: none; }
+.comparison-panel.open { display: block; }
+
+/* The picker stretches like the expression field, the button sits where Simulate does */
+.comparison-picker {
+    display: none; /* revealed together with the panel */
+    flex-grow: 1;
+}
+.comparison-picker.open { display: flex; }
+
+/* The field itself is an input, so it picks up the expression field's styling as is */
+.comparison-picker label {
+    margin-bottom: 0.25rem; /* plus the control gap, matching the form label */
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #1e293b;
+}
+.picker-input { cursor: pointer; }
+
+.comparison-action {
+    display: flex;
+    align-items: flex-end;
+}
+@media (min-width: 768px) {
+    /* Keeps the button on the right whether or not the picker is showing */
+    .comparison-action { margin-left: auto; }
+}
+button.compare-btn {
+    padding: 0.85rem 2rem;
+    min-width: 13rem; /* fits both labels, so the row does not jump when toggled */
+    text-align: center;
+}
 
 /* Plasma-shaded metric cells (list + matrix); colors are set inline per value */
 .heat-cell {
@@ -305,6 +415,8 @@ tr:last-child td { border-bottom: none; }
     height: 300px;
     width: 100%;
 }
+/* Chart.js writes an inline pixel width; keep a stale one from widening the page */
+.chart-container canvas { max-width: 100%; }
 @media (min-width: 768px) {
     .chart-container { height: 380px; }
 }
