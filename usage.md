@@ -19,32 +19,40 @@
 - `max` - Maximum: takes the maximum of two values (e.g for Advantage)
 - `min` - Minimum: takes the minimum of two values (e.g. for Disadvantage)
 - `reroll` - Reroll unmodified values and take the new result. Supports ranges as the left operand. 
-  - Syntax: `[dice roll] reroll [number or range]`
-  - Has the second highest precedence
-  - Examples:
-    - `2d6 reroll 1` - Roll two `d6` dice, and for each die, reroll a result of `1`.
-    - `2d6 reroll 1:2` - Re-rolls results of `1` and `2`
-    - `2d6 reroll i:j` - Roll two `d6` dice, and for each die, reroll a result of `i` up to `j` (inclusive)
+    - Syntax: `[dice roll] reroll [number or range]`
+    - Has the second highest precedence
+    - Examples:
+        - `2d6 reroll 1` - Roll two `d6` dice, and for each die, reroll a result of `1`.
+        - `2d6 reroll 1:2` - Re-rolls results of `1` and `2`
+        - `2d6 reroll i:j` - Roll two `d6` dice, and for each die, reroll a result of `i` up to `j` (inclusive)
 - `repeat` - Repeat a computation `n` times, sum the results
-  - Syntax `[expression] repeat [n_repetitions]`
-  - Has the lowest precedence
-  - Example: `(d20 + 5 >= 15) * (2d6 + 3) repeat 2`
+    - Syntax `[expression] repeat [n_repetitions]`
+    - Has the lowest precedence
+    - Example: `(d20 + 5 >= 15) * (2d6 + 3) repeat 2` - Two attacks with the same modifers
 
 
 ## Unary Operators (apply to one value)
 - `-` - Negation (multiply by -1)
 
 ## Examples
-- `d20` - Roll a 20-sided die
-- `2d6 + 5` - Roll two 6-sided dice and add 5
-- `d20 max d20 + 5` - Roll d20 with advantage and add 5
-- `(d20 >= 15)` - Check if d20 roll is 15 or higher (1 for success, 0 for failure)
-- `(d20 max d20 + 5 >= 15) * (2d6 + 5)` - Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
-- `(d20 + 5 >= 15) * (2d6 + 5) + (d20 + 5 >= 15) * (1d4 + 5)` - Two attack rolls, both against the same AC and with the same attack bonuses, but with different damage values.
-- `((d20 max d20 + n - 5 >= k) * (2d6 + 5 + 10)) > ((d20 max d20 + n >= k) * (2d6 + 5 ))` Comparison between attacks with Heavy Weapon Master(HWM) and without. `n` is the base attack bonus, and `k` is the AC. The median matrix will have `1` on the positions where the HWM attack deals more damage on average. Use variables to set different values for `n` and `k`.
+- Roll a 20-sided die
+    - `d20`
+- Roll two 6-sided dice and add 5
+    - `2d6 + 5`
+- Roll d20 with advantage and add 5
+    - `d20 max d20 + 5` 
+- Check if d20 roll is 15 or higher (1 for success, 0 for failure)
+    - `(d20 >= 15)`
+- Attack roll (d20) with advantage, with attack bonus + 5, against AC 15, causing 2d6 + 5 damage on hit.
+    - `(d20 max d20 + 5 >= 15) * (2d6 + 5)` 
+- Two attack rolls, both against the same AC and with the same attack bonuses, but with different damage values.
+    - `(d20 + 5 >= 15) * (2d6 + 5) + (d20 + 5 >= 15) * (1d4 + 5)` 
+- Comparison between attacks with Heavy Weapon Master(HWM) and without. `n` is the base attack bonus, and `k` is the AC. The median matrix will have `1` on the positions where the HWM attack deals more damage on average. Use variables to set different values for `n` and `k`.
+    - `((d20 max d20 + n - 5 >= k) * (2d6 + 5 + 10)) > ((d20 max d20 + n >= k) * (2d6 + 5 ))`
 
 ## Variables
-Allow you to evalute the expression for multiple values at the same time. Currently, up to two variables are supported.
+Allow you to evalute the expression for multiple values at the same time. Currently, up to thre variables are supported.
+
 Each variable has
 - Name
   - string that you can write inside the expression
