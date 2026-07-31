@@ -51,7 +51,7 @@
     - `((d20 max d20 + n - 5 >= k) * (2d6 + 5 + 10)) > ((d20 max d20 + n >= k) * (2d6 + 5 ))`
 
 ## Variables
-Allow you to evalute the expression for multiple values at the same time. Currently, up to thre variables are supported.
+Allow you to evalute the expression for multiple values at the same time.
 
 Each variable has
 - Name
