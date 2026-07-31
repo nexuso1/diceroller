@@ -12,58 +12,81 @@
 <body>
 
 <div class="container">
-    <h1>Dice Roll Statistic Calculator</h1>
+    <h1>Dice Roll Expected Value Calculator</h1>
     
     <!-- Input Section -->
     <form id="calc-form">
         <div class="input-group">
             <div class="input-wrapper">
                 <label for="expression">Input dice expression:</label>
-                <input type="text" id="expression" placeholder="Type an expression, e.g (d20 max d20 + 5 >= 15) * (2d6 + 5)" value="(d20 max d20 + 5 >= 15) * (2d6 + 5)" required>
+                <input type="text" id="expression" placeholder="Type an expression, e.g (d20 + 6 >= 15) * (2d6 + 5)" value="(d20 + 6 >= 15) * (2d6 + 5)" required>
             </div>
             <div style="display: flex; align-items: flex-end;">
-                <button type="submit" id="submit-btn">Simulate <span class="key-badge">S</span></button>
+                <button type="submit" id="submit-btn" class="primary-btn">Simulate <span class="key-badge">S</span></button>
             </div>
         </div>
     </form>
 
+    <!-- Variables (Optional) -->
+    <div class="variables-section">
+        <div class="variables-header">
+            <button type="button" id="add-var-btn" class="secondary-btn">Add Variable</button>
+            <span id="var-count-lbl" style="color: #64748b; font-size: 0.95rem;">Current number of variables: 0/3</span>
+        </div>
+        <div id="variables-list" class="variables-list">
+            <!-- Dynamic variables will insert here -->
+        </div>
+    </div>
+
     <!-- Error Message Banner -->
     <div id="error-message" class="error"></div>
 
-    <!-- Output Dashboard (reveals dynamically) -->
+    <!-- Output Dashboard -->
     <div id="dashboard" class="result-section">
-        <div class="dashboard-grid">
-            <!-- Left Side: Result Summary Table -->
+        <div id="dashboard-grid" class="dashboard-grid">
+            <!-- Summary Table Section -->
             <div>
-                <h2 style="margin-top: 0; font-size: 1.5rem; margin-bottom: 1rem;">Result Summary</h2>
+                <div class="results-header">
+                    <h2 style="margin-top: 0; font-size: 1.5rem; margin-bottom: 0;">Result Summary</h2>
+
+                    <!-- Multi-variable view controls (only shown in sweep mode) -->
+                    <div id="view-controls" class="view-controls">
+                        <div class="control-item">
+                            <label for="view-mode">View</label>
+                            <select id="view-mode">
+                                <option value="list">List</option>
+                                <option value="matrix">Matrix</option>
+                            </select>
+                        </div>
+                        <div class="control-item matrix-only">
+                            <label for="matrix-row-var">Rows</label>
+                            <select id="matrix-row-var"></select>
+                        </div>
+                        <div class="control-item matrix-only">
+                            <label for="matrix-col-var">Columns</label>
+                            <select id="matrix-col-var"></select>
+                        </div>
+                        <div class="control-item matrix-only">
+                            <label for="matrix-metric">Metric</label>
+                            <select id="matrix-metric">
+                                <option value="mean">Mean</option>
+                                <option value="median">Median</option>
+                                <option value="std">Standard deviation</option>
+                            </select>
+                        </div>
+                        <!-- Dropdowns to fix the value of any variable not on an axis -->
+                        <div id="matrix-slice-controls" class="matrix-only slice-controls"></div>
+                    </div>
+                </div>
                 <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Mean</td>
-                                <td id="val-mean" style="font-weight: 600;">-</td>
-                            </tr>
-                            <tr>
-                                <td>Median</td>
-                                <td id="val-median" style="font-weight: 600;">-</td>
-                            </tr>
-                            <tr>
-                                <td>Standard deviation (bias corrected)</td>
-                                <td id="val-std" style="font-weight: 600;">-</td>
-                            </tr>
-                        </tbody>
+                    <table id="summary-table">
+                        <!-- Head and body will render dynamically depending on mode -->
                     </table>
                 </div>
             </div>
 
-            <!-- Right Side: Chart.js Distribution Canvas -->
-            <div>
+            <!-- Chart Section (Only visible/active in single mode) -->
+            <div id="chart-section-wrapper">
                 <div class="chart-container">
                     <canvas id="distributionChart"></canvas>
                 </div>
@@ -75,6 +98,8 @@
     <div class="usage-guide">
         {{ guide_html|safe }}
     </div>
+
+    <div class=""
 </div>
 
 <script type=text/javascript src="{{
