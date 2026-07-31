@@ -1,5 +1,10 @@
+@font-face {
+  font-family: Nunito; /* set name */
+  src: url("fonts/Nunito/Nunito-VariableFont_wght.ttf"); /* url of the font */
+}
+
 body {
-    font-family: ui-monospace, Consolas, system-ui, -apple-system, sans-serif;
+    font-family: Nunito, system-ui, -apple-system, sans-serif;
     background-color: white;
     color: #1e293b;
     margin: 0;
@@ -9,41 +14,32 @@ body {
 }
 .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1600px;
     background-color: white;
-    padding: 1.25rem; /* Cozy padding for mobile */
+    padding: 1.25rem;
     box-sizing: border-box;
 }
 
-/* Responsive H1 */
 h1 {
     text-align: center;
-    font-size: 2.2rem; /* Scaled down from 4rem for mobile readability */
+    font-size: 2.2rem;
     color: #1e293b;
     margin-top: 1rem;
     margin-bottom: 2rem;
-    line-height: 1.2;
 }
 @media (min-width: 768px) {
-    .container {
-        padding: 2.5rem; /* Restore desktop padding */
-    }
-    h1 {
-        font-size: 3.5rem;
-        margin-bottom: 4rem;
-    }
+    .container { padding: 2.5rem; }
+    h1 { font-size: 3.5rem; }
 }
 
-/* Responsive Input Group */
+/* Forms */
 .input-group {
     display: flex;
-    flex-direction: column; /* Stack input and button on mobile */
+    flex-direction: column;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
-.input-wrapper {
-    width: 100%;
-}
+.input-wrapper { flex-grow: 1; }
 label {
     font-weight: 600;
     font-size: 0.95rem;
@@ -54,20 +50,21 @@ input {
     width: 100%;
     box-sizing: border-box;
     padding: 0.85rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #d2ebff;
     border-radius: 8px;
     font-size: 1rem;
-    background-color: #f1f5f9;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #ebeff3;
     transition: border-color 0.2s;
 }
 input:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: #2c76ff;
     background-color: #fff;
 }
-button {
-    width: 100%; /* Full width button on mobile */
-    justify-content: center;
+
+/* Buttons */
+button.primary-btn {
     padding: 0.85rem 2rem;
     background-color: #ff4a4a;
     color: white;
@@ -79,21 +76,32 @@ button {
     transition: background-color 0.2s;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
 }
-button:hover {
-    background-color: #e03e3e;
+button.primary-btn:hover { background-color: #e03e3e; }
+
+.secondary-btn {
+    background: white;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+}
+.secondary-btn:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
 }
 
-/* Desktop specific layout rules */
 @media (min-width: 768px) {
     .input-group {
-        flex-direction: row; /* Side-by-side input and button on desktop */
+        flex-direction: row;
         align-items: flex-end;
     }
-    button {
-        width: auto; /* Shrink button to natural content size */
-    }
+    button.primary-btn { width: auto; }
 }
 
 .key-badge {
@@ -104,28 +112,83 @@ button:hover {
     font-size: 0.85em;
 }
 
-/* Sequential Layout Grid for Results */
+/* Variables Section */
+.variables-section {
+    margin-bottom: 2.5rem;
+}
+.variables-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.variables-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Variable Card matching Mockup styling */
+.variable-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+.variable-card-header {
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+}
+.variable-card-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.variable-inputs-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+@media (min-width: 768px) {
+    .variable-inputs-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+.parsed-info {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-family: monospace;
+    margin-top: -0.5rem;
+}
+
+/* Layout Grid for Results */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr; /* Default to 1 column: sequential on mobile */
+    grid-template-columns: 1fr;
     gap: 2.5rem;
     margin-bottom: 3rem;
 }
 @media (min-width: 768px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr 1.5fr; /* 2 columns: side-by-side on desktop */
+    .dashboard-grid.single-mode {
+        grid-template-columns: 1fr 1.5fr;
     }
 }
 
-/* Result Table styling */
-.result-section {
-    display: none; /* Revealed on successful fetch */
-}
+/* Tables */
+.result-section { display: none; }
 .table-container {
     background-color: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    overflow: hidden;
+    overflow-x: auto;
 }
 table {
     width: 100%;
@@ -143,42 +206,30 @@ th {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-tr:last-child td {
-    border-bottom: none;
-}
+tr:last-child td { border-bottom: none; }
 
-/* Make chart container fluid but strictly bounded */
 .chart-container {
     position: relative;
-    height: 300px; /* Marginally shorter on mobile to fit views better */
+    height: 300px;
     width: 100%;
 }
 @media (min-width: 768px) {
-    .chart-container {
-        height: 380px;
-    }
+    .chart-container { height: 380px; }
 }
 
-/* Usage Guide styling */
+/* Markdown Usage Guide styling */
 .usage-guide {
-    border-top: 1px solid #e2e8f0;
     padding-top: 2rem;
     margin-top: 2.5rem;
     color: #334155;
     line-height: 1.625;
 }
-
-/* Responsive Usage Guide Headers */
-.usage-guide h1, 
-.usage-guide h2, 
-.usage-guide h3 {
+.usage-guide h1, .usage-guide h2, .usage-guide h3 {
     color: #1e293b;
     font-weight: 700;
     margin-top: 1.75rem;
     margin-bottom: 0.75rem;
-    text-align: left;
 }
-
 .usage-guide h1 { font-size: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
 .usage-guide h2 { font-size: 1.5rem; }
 .usage-guide h3 { font-size: 1.2rem; }
@@ -188,25 +239,9 @@ tr:last-child td {
     .usage-guide h2 { font-size: 2rem; }
     .usage-guide h3 { font-size: 1.4rem; }
 }
-
-/* Lists */
-.usage-guide ul, 
-.usage-guide ol {
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    padding-left: 1.5rem;
-}
-.usage-guide li {
-    margin-bottom: 0.5rem;
-}
-
-/* Bold/Strong text */
-.usage-guide strong {
-    color: #0f172a;
-    font-weight: 600;
-}
-
-/* Inline Code Badges */
+.usage-guide ul, .usage-guide ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.usage-guide li { margin-bottom: 0.5rem; }
+.usage-guide strong { color: #0f172a; font-weight: 600; }
 .usage-guide code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.9em;
@@ -214,10 +249,8 @@ tr:last-child td {
     border: 1px solid #e2e8f0;
     padding: 0.15rem 0.35rem;
     border-radius: 4px;
-    color: #0f172a;
+    color: #1554a7;
 }
-
-/* Fenced Code Blocks */
 .usage-guide pre {
     background-color: #0f172a;
     color: #f8fafc;
@@ -227,25 +260,8 @@ tr:last-child td {
     margin: 1rem 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
-.usage-guide pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    color: inherit;
-    font-size: 0.9rem;
-    line-height: 1.5;
-}
+.usage-guide pre code { background: none; border: none; padding: 0; color: inherit; }
 
-/* Blockquotes */
-.usage-guide blockquote {
-    margin: 1rem 0;
-    padding-left: 1rem;
-    border-left: 4px solid #cbd5e1;
-    color: #64748b;
-    font-style: italic;
-}
-
-/* Error Message Banner */
 .error {
     color: #ef4444;
     background-color: #fef2f2;
