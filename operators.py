@@ -1,6 +1,14 @@
 import inspect
 import numpy as np
 
+# Guard rails for the allocating operators. Every simulation runs `trials` rows,
+# so an unbounded dice count or repeat count is a request that can exhaust the
+# machine's memory: at the default 200k trials, `100d6` already allocates ~80 MB.
+MAX_DICE_COUNT = 100
+MAX_DICE_SIDES = 1000
+MAX_REPEAT = 50
+MAX_RANGE_SPAN = 100
+
 
 class Operator:
     token = None
@@ -86,6 +94,10 @@ class DiceRoll(BinaryOperator):
 
         if count < 1 or self.sides < 1:
             raise ValueError("Dice count and sides must be positive")
+        if count > MAX_DICE_COUNT:
+            raise ValueError(f"Dice count must be at most {MAX_DICE_COUNT}")
+        if self.sides > MAX_DICE_SIDES:
+            raise ValueError(f"Dice must have at most {MAX_DICE_SIDES} sides")
         if count == 1:
             return rng.integers(1, self.sides + 1, size=trials, dtype=np.int32).astype(np.float32)
         rolls = rng.integers(1, self.sides + 1, size=(trials, count), dtype=np.int32).astype(np.float32)
@@ -196,6 +208,8 @@ class Repeat(BinaryOperator):
 
     def evaluate(self, rng, trials):
         n = int(self.right.evaluate(rng, trials))
+        if n > MAX_REPEAT:
+            raise ValueError(f"Repeat count must be at most {MAX_REPEAT}")
         results = [self.left.evaluate(rng, trials) for _ in range(n)]
         return np.asarray(results, dtype=np.float32).sum(0)
     
@@ -206,6 +220,8 @@ class Range(BinaryOperator):
     def evaluate(self, rng, trials):
         start = self.left.evaluate(rng, trials)
         stop = self.right.evaluate(rng, trials)
+        if abs(int(stop) - int(start)) > MAX_RANGE_SPAN:
+            raise ValueError(f"Range must span at most {MAX_RANGE_SPAN} values")
         return np.asarray([i for i in range(int(start), int(stop) + 1)])
 
 class Reroll(BinaryOperator):

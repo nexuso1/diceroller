@@ -1,5 +1,6 @@
 # app.py
 import os
+import time
 import itertools
 import numpy as np
 import markdown
@@ -7,6 +8,57 @@ from flask import Flask, render_template, request, jsonify
 from calc import simulate_distribution, ParseError
 
 app = Flask(__name__)
+
+# Request limits. The browser caps variables at three and 200k trials run per
+# combination, but nothing stops a hand-written POST from asking for the
+# cartesian product of three 100-value variables, so the server enforces its own.
+MAX_EXPRESSION_LENGTH = 200
+MAX_VARIABLES = 3
+MAX_VALUES_PER_VARIABLE = 20
+MAX_COMBINATIONS = 200
+# Backstop for expressions that are individually legal but slow in bulk; keep it
+# comfortably under the gunicorn --timeout so the worker answers instead of dying.
+SWEEP_BUDGET_SECONDS = 20
+
+
+class RequestRejected(Exception):
+    """The request asks for more work than this server is willing to do."""
+
+
+def validate_expression(expression):
+    if not isinstance(expression, str) or not expression.strip():
+        raise RequestRejected("No expression given.")
+    if len(expression) > MAX_EXPRESSION_LENGTH:
+        raise RequestRejected(f"Expression is too long (limit {MAX_EXPRESSION_LENGTH} characters).")
+    return expression
+
+
+def validate_variables(variables):
+    """Keep only usable variables, rejecting anything oversized or malformed."""
+    if not isinstance(variables, list):
+        raise RequestRejected("Variables must be a list.")
+
+    active = []
+    for variable in variables:
+        if not isinstance(variable, dict):
+            raise RequestRejected("Each variable must be an object.")
+
+        name, values = variable.get('name'), variable.get('values')
+        if not name or not values:
+            continue
+        if not isinstance(values, list):
+            raise RequestRejected(f"Values for '{name}' must be a list of numbers.")
+        if any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in values):
+            raise RequestRejected(f"Values for '{name}' must be numbers.")
+        if len(values) > MAX_VALUES_PER_VARIABLE:
+            raise RequestRejected(
+                f"Variable '{name}' has {len(values)} values (limit {MAX_VALUES_PER_VARIABLE})."
+            )
+        active.append({'name': str(name), 'values': values})
+
+    if len(active) > MAX_VARIABLES:
+        raise RequestRejected(f"At most {MAX_VARIABLES} variables are supported.")
+    return active
 
 def get_usage_guide():
     try:
@@ -35,14 +87,13 @@ def home():
 
 @app.route("/calculate", methods=["POST"])
 def calculate():
-    data = request.get_json()
-    expression = data.get("expression", "")
-    variables = data.get("variables", []) # List of dicts: [{'name': 'n', 'values': [1,2,3,4,5]}]
-    
+    data = request.get_json(silent=True) or {}
+
     try:
-        # Check if we have active variables with valid values
-        active_vars = [v for v in variables if v.get('name') and v.get('values')]
-        
+        expression = validate_expression(data.get("expression", ""))
+        # List of dicts: [{'name': 'n', 'values': [1,2,3,4,5]}]
+        active_vars = validate_variables(data.get("variables", []))
+
         if not active_vars:
             # --- 1. SINGLE EXPRESSION MODE (Original Logic) ---
             sim_data = simulate_distribution(expression)
@@ -75,10 +126,22 @@ def calculate():
             
             # Calculate Cartesian product of all variable values
             combinations = list(itertools.product(*var_value_lists))
-            
+            if len(combinations) > MAX_COMBINATIONS:
+                raise RequestRejected(
+                    f"That sweep is {len(combinations)} combinations (limit {MAX_COMBINATIONS}). "
+                    "Use fewer values or fewer variables."
+                )
+
             results_table = []
-            
+            deadline = time.monotonic() + SWEEP_BUDGET_SECONDS
+
             for combo in combinations:
+                if time.monotonic() > deadline:
+                    raise RequestRejected(
+                        f"Sweep exceeded {SWEEP_BUDGET_SECONDS}s after {len(results_table)} of "
+                        f"{len(combinations)} combinations. Simplify the expression or use fewer values."
+                    )
+
                 # Map variable names to their corresponding values for this iteration
                 combo_dict = dict(zip(var_names, combo))
                 
@@ -109,6 +172,8 @@ def calculate():
                 'results': results_table
             })
 
+    except RequestRejected as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
     except ParseError as e:
         return jsonify({'success': False, 'error': f"Parse Error: {str(e)}"})
     except Exception as e:

@@ -1,0 +1,33 @@
+# Install to /etc/systemd/system/diceroller.service, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now diceroller
+# Adjust User, WorkingDirectory and --workers for your machine.
+
+[Unit]
+Description=Dice roll statistics calculator
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/diceroller
+ExecStart=/opt/diceroller/venv/bin/gunicorn \
+    --bind 127.0.0.1:8000 \
+    --workers 2 \
+    --timeout 60 \
+    --access-logfile - \
+    flask_app:app
+Restart=always
+RestartSec=2
+
+# The simulations are CPU and memory bound; this caps the damage a pathological
+# request can do to the rest of the box. Raise it if you raise the app's limits.
+MemoryMax=1G
+
+# Nothing is written outside the working directory, so lock the rest down.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
